@@ -1,10 +1,10 @@
 {
-  "name": "Jekyll-Gulp-Sass-Autoprefixer-Imagemin-BrowserSync",
+  "name": "Love Your Database",
   "version": "1.0.0",
-  "description": "A starter project for Jekyll",
+  "description": "A blog about databases and related things",
   "main": "index.js",
-  "repository": "https://github.com/artemsheludko/Jekyll-Gulp-Sass-Autoprefixer-Imagemin-BrowserSync",
-  "author": "Artem Sheludko",
+  "repository": "git@github.com:gisborne/lydb.git",
+  "author": "Guyren Howe",
   "license": "MIT",
   "dependencies": {
     "browser-sync": "^2.18.13",
