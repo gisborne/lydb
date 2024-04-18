@@ -227,7 +227,7 @@ SELECT
 
 Postgres has a really complete set of operations on ranges.
 
-![a complete set of Postgres range operations][https://github.com/gisborne/lydb/blob/master/assets/img/range-operations.png?raw=true]
+![a complete set of Postgres range operations](https://github.com/gisborne/lydb/blob/master/assets/img/range-operations.png?raw=true)
 
 It is useful to create custom range types, which is done like this:
 
