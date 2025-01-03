@@ -6,7 +6,7 @@ description: > # this means to ignore newlines until "baseurl:"
   It is not the only way, but it is the best way. And although SQL is an abomination, it is what we have to work with.
   
   This blog discusses how to get the most out of your database. Things you might not know your database can do,
-  and how to implement ore of your application in the database.
+  and how to implement more of your application in the database.
 permalink: ':title/'
 baseurl: "/" # the subpath of your site, e.g. /blog
 url: "https://lydb.xyz" # the base hostname & protocol for your site, e.g. http://example.com
