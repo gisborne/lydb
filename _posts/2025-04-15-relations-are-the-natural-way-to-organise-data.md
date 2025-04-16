@@ -2,8 +2,6 @@
 layout: post
 ---
 
-# Why Relations are the Natural Way to Organise Data
-
 # TL;DR
 
 The Relational Database is the most natural and general way to store and retrieve data. We can — more or less — prove this mathematically. This post explains how.
