@@ -23,13 +23,13 @@ This can be implemented in many systems; Postgres provides an especially clean r
 
 State-changing operations are invoked by inserting a row into a table whose trigger performs the operation.
 
-This is a flexible design pattern. The exposition of the pattern will also provide an almost trivial to use multitenant architecture, as a demonstration of the pattern's flexibility
+This is a flexible design pattern. As a demonstration, the exposition also yields an almost trivial multitenant architecture.
 
 # Introduction
 
-The _Zero Authority Architecture_ employs a minimal middleware layer to exchange signed (optionally, encrypted) authorised operation requests between client and back end. Back end operations are all executed with minimal necessary authority
+The _Zero Authority Architecture_ employs a minimal middleware layer to exchange signed (optionally, encrypted) authorised operation requests between client and back end. Back end operations are all executed with minimal necessary authority.
 
-In this architecture, the database is not a passive store. It is the authority boundary of the system.
+The application server does not have the authority to query data; it only has the ability to present requests that may or may not be authorised by the database. A compromised application server should not be able to read your database at rest.
 
 This post describes how to implement such a pattern in Postgres. The pattern offers many advantages:
 
@@ -44,7 +44,7 @@ This post describes how to implement such a pattern in Postgres. The pattern off
 - **Centralised logic and authorisation**  
   Policies and behaviour live in the database.
 - **Uniform API**  
-  Any operations can be made available to any client, depending on authorisation.
+  Operations can be made available to any client, depending on authorisation.
 - **Built-in auditability**
   Commands are structured and optionally persistable.
 - **Context-driven isolation**
@@ -55,8 +55,6 @@ Note: This is a design pattern, not a prescription; different deployments may mo
 After describing the pattern, I will discuss how the pattern can be applied in various ways; how the design is language and client platform neutral, and note how it can be migrated to from a traditional (say, web) app gradually.
 
 # The Minimal Authority Principle
-
-## The Minimal Authority Principle
 
 It is widely accepted (e.g. [NIST SP 800-53](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf)) that secure systems should ensure every operation is executed with the minimal authority required. The benefit is simple: any compromise is limited to the scope of that authority.
 
@@ -70,7 +68,7 @@ The client's initial login is handled in the back end, with the middleware only 
 
 ![A Zero Authority Architecture request](/assets/img/request_scoped_authority.svg)
 
-Subsequent requests provide the token, a timestamp preventing hostile replay attacks, an identifier for the requested operation, and the arguments to that operation.
+Subsequent requests provide the token, a timestamp preventing hostile replay attacks, an identifier for the requested operation, and the arguments to that operation. The token must be revocable and time-bounded, and requests must be protected against replay (e.g. via timestamps and/or nonces).
 
 Postgres decrypts the request, validates the token and timestamp, sets the user (and in this example, the tenant_id) as a session variable, and tries to invoke the operation. e.g.
 
@@ -83,6 +81,8 @@ SET LOCAL app.tenant_id = $tenant_id;
 INSERT INTO function_schema.$function_name(…) VALUES(…);
 COMMIT;
 ```
+
+Observe that the function_name must be the name of a function in the function_schema. This is a simple way to ensure that only functions that are intended to be invoked by the middleware can be invoked.
 
 Note that state-changing operations write the request to a table; the actual function is a trigger on that table. In this way, event sourcing and logging are incorporated into the request execution. This aspect of the pattern is optional, but recommended, since it naturally expresses security concerns and removes the need for separate event sourcing and logging of requests.
 
@@ -109,7 +109,7 @@ In this example, there is something like a many:many relation between users and 
 
 Side effects, in the form of table updates, can also be gated by RLS policies in a similar manner.
 
-Side effects outside of Postgres state updates (e.g. sending email) can be handled either by a trigger sending a message using Postgres's LISTEN/NOTIFY feature, or by some other similar means (I haven't used it but [Supabase's REALTIME project](https://github.com/supabase/realtime) may be a better alternative for many purposes than LISTEN/NOTIFY.) Note that since any such side effect starts with a table write, all operations can still be gated using the Postgres authorisation architecture.
+Side effects outside of Postgres state updates (e.g. sending email) can be handled either by a trigger sending a message using Postgres's LISTEN/NOTIFY feature, or by some other similar means ([Supabase's REALTIME project](https://github.com/supabase/realtime) may be a better alternative for many purposes than LISTEN/NOTIFY.) Note that since any such side effect starts with a table write, all operations can still be gated using the Postgres authorisation architecture.
 
 # Synchronous vs Asynchronous requests
 
@@ -133,7 +133,7 @@ Authorisation is also an access mode. Other sorts of access modes are possible: 
 
 The original intent of the SQL database was that it should form a neutral data store, accessible from many different clients for different purposes. Centering the database in the internet-facing application recovers this feature.
 
-Note that the client can be written in any language, on any platform. Different clients can easily be given very different access rights and other modes. That the internet-facing middleware provides minimal authority access does not prevent an internal application, accessing the database using a different role, from having whatever privileges are required.
+Client can be written in any language, on any platform. Different clients can easily be given very different access rights and other modes. That the internet-facing middleware provides minimal authority access does not prevent an internal application, accessing the database using a different role, from having whatever privileges are required.
 
 ## Implementation language neutrality
 
@@ -165,7 +165,7 @@ Traditional web clients, where logic resides mostly in the middleware layer, can
 
 ## Testing and replay
 
-The recommended pattern incorporates Event Sourcing as a matter of course, facilitaing the traditional Event Sourcing advantages, such as replay and testing.
+The recommended pattern incorporates Event Sourcing as a matter of course, facilitating the traditional Event Sourcing advantages, such as replay and testing.
 
 ## Gradual migration
 
@@ -175,9 +175,29 @@ Existing logic-heavy-middleware applications can migrate to this pattern gradual
 
 Postgres is particularly well-suited to this pattern. Other highly programmable relational stores will also work well. The back end here could be replaced with one based on SQLite, and Oracle and SQL Server can be programmed in Python.
 
+## Great for small business software
+
+Many engineers will instinctively recoil from this pattern as "inefficient" because it moves business logic into the database.
+
+For typical small business software, however, minimising storage, bandwidth, and CPU time is rarely the primary concern. It is often acceptable to be profligate with resources if it produces software that is cheaper to build and more flexible.
+
+## Also appealing for large business software.
+
+Postgres is open source that is free to use and cheap to deploy.
+
+Many engineers thinking about larger business software will recoil from this pattern because it is "inefficient" to run business logic in the database. Yet is it?
+
+Large software products already routinely employ multiple middleware and database servers. If this pattern leads to fewer middleware servers and more Postgres servers, is that necessarily a problem?
+
+Moreover, the simple in-depth security by default offered by this architecture is a significant advantage in large-scale systems, as is the language and plaform neutrality. Your mobile developers can write their business logic in JavaScript or Kotlin, or they can call the business logic written by the back end engineers in Python.
+
+This piece hasn't even discussed the deep architectural possibilities that Postgres offers. It is straightforward, for example, to set up remote access between Postgres servers, so that they can transparently join across data stores or invoke remote functions.
+
+Postgres is an ideal neutral articulation point between heterogeneous data stores and services.
+
 # Conclusion
 
-The Zero Authority Architecture is a small shift in where we place trust, but it has large consequences.
+The Zero Authority Architecture is a small shift in where we place trust, but it has large consequences. This design deliberately trades some conventional layering for stronger security and simpler reasoning about authority.
 
 By removing standing authority from the application layer, we stop relying on the middleware to “do the right thing.” Instead, every request must prove its authority, and that authority is established and enforced at the point where the data actually lives.
 
