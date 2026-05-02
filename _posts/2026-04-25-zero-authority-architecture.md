@@ -175,13 +175,17 @@ Existing logic-heavy-middleware applications can migrate to this pattern gradual
 
 Postgres is particularly well-suited to this pattern. Other highly programmable relational stores will also work well. The back end here could be replaced with one based on SQLite, and Oracle and SQL Server can be programmed in Python.
 
+Another possibility pointed out to me by my friend [Tonio](https://www.linkedin.com/in/tonioloewald/) is that [this pattern works great in any strongly sandboxed language](https://www.linkedin.com/feed/update/urn:li:activity:7455127984388124672/?dashCommentUrn=urn%3Ali%3Afsd_comment%3A%287455287608944951296%2Curn%3Ali%3Aactivity%3A7455127984388124672%29) — Javascript and WASM being the most obvious examples.
+
 ## Great for small business software
 
 Many engineers will instinctively recoil from this pattern as "inefficient" because it moves business logic into the database.
 
 For typical small business software, however, minimising storage, bandwidth, and CPU time is rarely the primary concern. It is often acceptable to be profligate with resources if it produces software that is cheaper to build and more flexible.
 
-## Also appealing for large business software.
+I'll also note in passing here that for small business software, you can lean into Postgres features that are a little "inefficient", particularly [composite types](https://www.postgresql.org/docs/current/rowtypes.html) note the ["inefficiency"](https://lydb.xyz/postgres-types/).
+
+## Also great for large business software.
 
 Postgres is open source that is free to use and cheap to deploy.
 
