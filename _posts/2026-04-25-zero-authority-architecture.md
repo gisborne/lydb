@@ -199,6 +199,10 @@ This piece hasn't even discussed the deep architectural possibilities that Postg
 
 Postgres is an ideal neutral articulation point between heterogeneous data stores and services.
 
+## Related code
+
+Folks on the Postgres list seem to see this as unremarkable. Merlin Moncure said he's been developing in this style for a while, and he has some [interesting code to use with this pattern](https://www.postgresql.org/message-id/CAHyXU0yNBHF%3DyJG8-XAasedUagG%3D%2BPODje_RXZVuefWqhfuvdQ%40mail.gmail.com).
+
 # Conclusion
 
 The Zero Authority Architecture is a small shift in where we place trust, but it has large consequences. This design deliberately trades some conventional layering for stronger security and simpler reasoning about authority.
